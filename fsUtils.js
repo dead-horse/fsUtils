@@ -38,8 +38,12 @@ exports.merge = function(src, des, cb){
     _merge = function(src, des){
       fs.mkdir(des, function(err){
         if(err&&err.code !== 'EEXIST'){
-          cpError = err;
-          return cb(err);
+          if(!cbError){
+            cbError = err;
+            return cb(err);
+          }else{
+            return;
+          }
         }
         var files = fs.readdirSync(src),
             len = files.length;
