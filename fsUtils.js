@@ -1,15 +1,13 @@
 var fs = require('fs'),
     path = require('path');
 
-function createDone(cb){
-  return function(inc){
-    if(this.num){
-      this.num += inc||0;
-    }else{
-      this.num = inc;
-    }
+var Done = function(cb){
+  this.num = 1;
+  this.cb = cb;
+  this.doOnce = function(inc){
+    this.num += inc || 0;
     if(--this.num === 0){
-      return cb();
+      return this.cb();
     }
   }
 }
@@ -24,7 +22,7 @@ exports.merge = function(src, des, cb){
     cb = function(){}
   }
   var cpError = null,
-      done = createDone(cb);
+      done = new Done(cb);
   src = path.resolve(src);
   des = path.resolve(des);
   if(des.indexOf(src)===0){
@@ -34,7 +32,6 @@ exports.merge = function(src, des, cb){
     if(err&&err.code != 'ENOENT'){
       return cb(err);
     }
-    done(2);
     _merge = function(src, des){
       fs.mkdir(des, function(err){
         if(err&&err.code !== 'EEXIST'){
@@ -47,7 +44,7 @@ exports.merge = function(src, des, cb){
         }
         var files = fs.readdirSync(src),
             len = files.length;
-        done(len);
+        done.doOnce(len);
         for(var i=0; i!=len; ++i){
           (function(i){
             if(cpError) return;
@@ -63,7 +60,7 @@ exports.merge = function(src, des, cb){
                   var writeStream = fs.createWriteStream(desPath);
                   readStream.pipe(writeStream);
                 }
-                done();
+                done.doOnce();
               })
             }
           })(i);
